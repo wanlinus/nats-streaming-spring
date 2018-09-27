@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class NatsStreamingProperties {
     private String clusterId = "test-cluster";
     private String natsUrl = "nats://127.0.0.1:4200";
-    private String durableName = "test";
+
 
     public String getClusterId() {
         return clusterId;
@@ -28,11 +28,4 @@ public class NatsStreamingProperties {
         this.natsUrl = natsUrl;
     }
 
-    public String getDurableName() {
-        return durableName;
-    }
-
-    public void setDurableName(String durableName) {
-        this.durableName = durableName;
-    }
 }

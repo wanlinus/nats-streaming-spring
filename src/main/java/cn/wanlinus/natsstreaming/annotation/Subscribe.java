@@ -11,7 +11,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @Documented
-public @interface StreamingSub {
+public @interface Subscribe {
 
 
     /**
@@ -28,27 +28,12 @@ public @interface StreamingSub {
     @AliasFor("value")
     String subscribe() default "";
 
-
     /**
      * Queue name
      *
      * @return the nats queue name
      */
     String queue() default "";
-
-    /**
-     * 是否手动ack
-     *
-     * @return
-     */
-    boolean manualAck() default false;
-
-    /**
-     * ack等待时间 second
-     *
-     * @return
-     */
-    int ackWait() default 30;
 
     /**
      * @return
