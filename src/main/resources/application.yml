@@ -1,0 +1,9 @@
+spring:
+  nats:
+    streaming:
+      cluster-id:
+      nats-urls:
+      token:
+      max-reconnect:
+      reconnect-wait:
+      connection-timeout:

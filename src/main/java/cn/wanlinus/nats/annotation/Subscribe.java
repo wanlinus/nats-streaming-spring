@@ -1,4 +1,4 @@
-package cn.wanlinus.natsstreaming.annotation;
+package cn.wanlinus.nats.annotation;
 
 import org.springframework.core.annotation.AliasFor;
 

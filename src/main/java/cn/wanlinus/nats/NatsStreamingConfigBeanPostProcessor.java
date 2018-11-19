@@ -1,17 +1,18 @@
-package cn.wanlinus.natsstreaming;
+package cn.wanlinus.nats;
 
-import cn.wanlinus.natsstreaming.annotation.Subscribe;
+import cn.wanlinus.nats.annotation.Subscribe;
 import io.nats.streaming.Message;
 import io.nats.streaming.StreamingConnection;
 import io.nats.streaming.SubscriptionOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Optional;
+import java.lang.reflect.Method;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -22,12 +23,13 @@ import java.util.concurrent.TimeoutException;
  */
 public class NatsStreamingConfigBeanPostProcessor implements BeanPostProcessor {
 
-    private StreamingConnection sc;
-    private SubscriptionOptions options;
+    private static final Logger LOGGER = LoggerFactory.getLogger(NatsStreamingConfigBeanPostProcessor.class);
 
-    public NatsStreamingConfigBeanPostProcessor(StreamingConnection sc, SubscriptionOptions options) {
+    private StreamingConnection sc;
+
+
+    public NatsStreamingConfigBeanPostProcessor(StreamingConnection sc) {
         this.sc = sc;
-        this.options = options;
     }
 
     @Override
@@ -36,12 +38,12 @@ public class NatsStreamingConfigBeanPostProcessor implements BeanPostProcessor {
     }
 
     @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    public Object postProcessAfterInitialization(Object bean, String beanName) {
 
         final Class<?> clazz = bean.getClass();
-        Arrays.stream(clazz.getMethods()).forEach(method -> {
-            Optional<Subscribe> sub = Optional.ofNullable(AnnotationUtils.findAnnotation(method, Subscribe.class));
-            sub.ifPresent(subscribe -> {
+        for (final Method method : clazz.getMethods()) {
+            final Subscribe sub = AnnotationUtils.findAnnotation(method, Subscribe.class);
+            if (sub != null) {
                 final Class<?>[] parameterTypes = method.getParameterTypes();
                 if (parameterTypes.length != 1 || !parameterTypes[0].equals(Message.class)) {
                     throw new NatsStreamingException(String.format(
@@ -53,19 +55,21 @@ public class NatsStreamingConfigBeanPostProcessor implements BeanPostProcessor {
                     ));
                 }
                 try {
-                    sc.subscribe(subscribe.subscribe(), "".equals(subscribe.queue()) ? null : subscribe.queue(), msg -> {
+                    sc.subscribe(sub.subscribe(), "".equals(sub.queue()) ? null : sub.queue(), msg -> {
                         try {
                             method.invoke(bean, msg);
                         } catch (IllegalAccessException | InvocationTargetException e) {
-                            e.printStackTrace();
+                            LOGGER.error("nats subscribe method call error");
                         }
-                    }, options);
+                    }, new SubscriptionOptions.Builder()
+                            .durableName("".equals(sub.durableName()) ? null : sub.durableName())
+                            .startWithLastReceived().build());
                 } catch (IOException | InterruptedException | TimeoutException e) {
-                    e.printStackTrace();
+                    LOGGER.error("nats subscribe have some problems");
                     Thread.currentThread().interrupt();
                 }
-            });
-        });
+            }
+        }
         return bean;
     }
 }

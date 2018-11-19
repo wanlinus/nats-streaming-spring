@@ -1,4 +1,4 @@
-package cn.wanlinus.natsstreaming;
+package cn.wanlinus.nats;
 
 /**
  * @author wanli
