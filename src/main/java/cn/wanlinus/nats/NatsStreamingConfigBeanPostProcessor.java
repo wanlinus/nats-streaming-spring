@@ -12,7 +12,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -41,9 +42,9 @@ public class NatsStreamingConfigBeanPostProcessor implements BeanPostProcessor {
     public Object postProcessAfterInitialization(Object bean, String beanName) {
 
         final Class<?> clazz = bean.getClass();
-        for (final Method method : clazz.getMethods()) {
-            final Subscribe sub = AnnotationUtils.findAnnotation(method, Subscribe.class);
-            if (sub != null) {
+        Arrays.stream(clazz.getMethods()).forEach(method -> {
+            Optional<Subscribe> subOpt = Optional.ofNullable(AnnotationUtils.findAnnotation(method, Subscribe.class));
+            subOpt.ifPresent(sub -> {
                 final Class<?>[] parameterTypes = method.getParameterTypes();
                 if (parameterTypes.length != 1 || !parameterTypes[0].equals(Message.class)) {
                     throw new NatsStreamingException(String.format(
@@ -55,21 +56,21 @@ public class NatsStreamingConfigBeanPostProcessor implements BeanPostProcessor {
                     ));
                 }
                 try {
-                    sc.subscribe(sub.subscribe(), "".equals(sub.queue()) ? null : sub.queue(), msg -> {
+                    sc.subscribe(sub.value(), "".equals(sub.queue()) ? null : sub.queue(), msg -> {
                         try {
                             method.invoke(bean, msg);
                         } catch (IllegalAccessException | InvocationTargetException e) {
-                            LOGGER.error("nats subscribe method call error");
+                            LOGGER.error(String.format("method <%s> invoke failed", method.getName()));
                         }
                     }, new SubscriptionOptions.Builder()
                             .durableName("".equals(sub.durableName()) ? null : sub.durableName())
-                            .startWithLastReceived().build());
+                            .deliverAllAvailable().build());
                 } catch (IOException | InterruptedException | TimeoutException e) {
-                    LOGGER.error("nats subscribe have some problems");
+                    LOGGER.error("Message subscribe failed");
                     Thread.currentThread().interrupt();
                 }
-            }
-        }
+            });
+        });
         return bean;
     }
 }
