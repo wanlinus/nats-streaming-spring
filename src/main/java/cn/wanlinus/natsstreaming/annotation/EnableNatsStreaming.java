@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Enable Nats Support {@link }
+ * Enable Nats Streaming Support {@link NatsStreamingConfiguration}
  *
  * @author wanli
  * @date 2018-09-17

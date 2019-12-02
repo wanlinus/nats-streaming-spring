@@ -36,6 +36,20 @@ public @interface Subscribe {
     String queue() default "";
 
     /**
+     * 是否手动ack
+     *
+     * @return
+     */
+    boolean manualAck() default false;
+
+    /**
+     * ack等待时间 second
+     *
+     * @return
+     */
+    int ackWait() default 30;
+
+    /**
      * @return
      */
     String durableName() default "";
